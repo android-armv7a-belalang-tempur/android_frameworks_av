@@ -88,7 +88,7 @@ public:
             const sp<DataSource> &source, String8 *mimeType,
             float *confidence, sp<AMessage> *meta);
 
-   // static void RegisterDefaultSniffers();
+    static void RegisterDefaultSniffers();
 
     // for DRM
     virtual sp<DecryptHandle> DrmInitialization(const char *mime = NULL) {
