@@ -37,7 +37,6 @@
 #include <media/stagefright/MediaDefs.h>
 #include <media/stagefright/MediaErrors.h>
 #include <media/stagefright/MetaData.h>
-#include <media/stagefright/ExtendedCodec.h>
 #include <media/stagefright/NativeWindowWrapper.h>
 #include <private/android_filesystem_config.h>
 #include <utils/Log.h>
@@ -712,9 +711,6 @@ bool MediaCodec::handleDequeueOutputBuffer(uint32_t replyID, bool newRequest) {
         if (omxFlags & OMX_BUFFERFLAG_EOS) {
             flags |= BUFFER_FLAG_EOS;
         }
-        if (omxFlags & OMX_BUFFERFLAG_EXTRADATA) {
-            flags |= BUFFER_FLAG_EXTRADATA;
-        }
 
         response->setInt32("flags", flags);
     }
@@ -872,8 +868,7 @@ void MediaCodec::onMessageReceived(const sp<AMessage> &msg) {
 
                     CHECK(msg->findString("componentName", &mComponentName));
 
-                    if (mComponentName.startsWith("OMX.google.") ||
-                            mComponentName.startsWith("OMX.ffmpeg.")) {
+                    if (mComponentName.startsWith("OMX.google.")) {
                         mFlags |= kFlagIsSoftwareCodec;
                     } else {
                         mFlags &= ~kFlagIsSoftwareCodec;
@@ -1561,7 +1556,7 @@ void MediaCodec::onMessageReceived(const sp<AMessage> &msg) {
             uint32_t replyID;
             CHECK(msg->senderAwaitsResponse(&replyID));
 
-            if (!isExecuting()) {
+            if (!isExecuting() || (mFlags & kFlagIsAsync)) {
                 PostReplyWithError(replyID, INVALID_OPERATION);
                 break;
             } else if (mFlags & kFlagStickyError) {
@@ -1700,18 +1695,6 @@ void MediaCodec::extractCSD(const sp<AMessage> &format) {
 
         mCSD.push_back(csd);
         ++i;
-    }
-
-    sp<ABuffer> extendedCSD = ExtendedCodec::getRawCodecSpecificData(format);
-    if (extendedCSD != NULL) {
-        ALOGV("pushing extended CSD of size %d", extendedCSD->size());
-        mCSD.push_back(extendedCSD);
-    }
-
-    sp<ABuffer> aacCSD = ExtendedCodec::getAacCodecSpecificData(format);
-    if (aacCSD != NULL) {
-        ALOGV("pushing AAC CSD of size %d", aacCSD->size());
-        mCSD.push_back(aacCSD);
     }
 
     ALOGV("Found %zu pieces of codec specific data.", mCSD.size());

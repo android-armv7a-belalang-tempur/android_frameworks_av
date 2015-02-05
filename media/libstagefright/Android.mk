@@ -44,7 +44,6 @@ LOCAL_SRC_FILES:=                         \
         NuMediaExtractor.cpp              \
         OMXClient.cpp                     \
         OMXCodec.cpp                      \
-        ExtendedCodec.cpp                 \
         OggExtractor.cpp                  \
         SampleIterator.cpp                \
         SampleTable.cpp                   \
@@ -58,14 +57,9 @@ LOCAL_SRC_FILES:=                         \
         Utils.cpp                         \
         VBRISeeker.cpp                    \
         WAVExtractor.cpp                  \
-        WAVEWriter.cpp                    \
         WVMExtractor.cpp                  \
         XINGSeeker.cpp                    \
         avc_utils.cpp                     \
-        ExtendedExtractor.cpp             \
-        ExtendedUtils.cpp                 \
-        ExtendedStats.cpp                 \
-        APE.cpp                           \
 
 LOCAL_C_INCLUDES:= \
         $(TOP)/frameworks/av/include/media/ \
@@ -105,18 +99,12 @@ LOCAL_SHARED_LIBRARIES := \
         libz \
         libpowermanager
 
-ifeq ($(BOARD_USES_QCOM_HARDWARE),true)
-ifneq ($(filter msm7x30 msm8660 msm8960,$(TARGET_BOARD_PLATFORM)),)
-ifeq ($(BOARD_USES_LEGACY_ALSA_AUDIO),true)
-   ifeq ($(USE_TUNNEL_MODE),true)
-        LOCAL_CFLAGS += -DUSE_TUNNEL_MODE
-   endif
-   ifeq ($(NO_TUNNEL_MODE_FOR_MULTICHANNEL),true)
-        LOCAL_CFLAGS += -DNO_TUNNEL_MODE_FOR_MULTICHANNEL
-   endif
-   LOCAL_SRC_FILES += LPAPlayerALSA.cpp TunnelPlayer.cpp
+ifeq ($(TARGET_BOARD_PLATFORM),omap4)
+LOCAL_CFLAGS := -DBOARD_CANT_REALLOCATE_OMX_BUFFERS
 endif
-endif
+
+ifeq ($(TARGET_BOARD_PLATFORM),exynos4)
+LOCAL_CFLAGS := -DBOARD_CANT_REALLOCATE_OMX_BUFFERS
 endif
 
 #QTI FLAC Decoder
@@ -142,33 +130,6 @@ LOCAL_STATIC_LIBRARIES := \
         libFLAC \
         libmedia_helper
 
-ifeq ($(TARGET_USES_QCOM_BSP), true)
-    LOCAL_C_INCLUDES += $(call project-path-for,qcom-display)/libgralloc
-    LOCAL_CFLAGS += -DQCOM_BSP
-endif
-
-ifeq ($(TARGET_ENABLE_QC_AV_ENHANCEMENTS),true)
-       LOCAL_CFLAGS     += -DENABLE_AV_ENHANCEMENTS
-       LOCAL_C_INCLUDES += $(TOP)/$(call project-path-for,qcom-media)/mm-core/inc
-       LOCAL_C_INCLUDES += $(TOP)/frameworks/av/media/libstagefright/include
-       LOCAL_SRC_FILES  += ExtendedMediaDefs.cpp
-       LOCAL_SRC_FILES  += ExtendedWriter.cpp
-       LOCAL_SRC_FILES  += FMA2DPWriter.cpp
-endif #TARGET_ENABLE_AV_ENHANCEMENTS
-
-ifeq ($(call is-vendor-board-platform,QCOM),true)
-ifeq ($(strip $(AUDIO_FEATURE_ENABLED_PCM_OFFLOAD_24)),true)
-       LOCAL_CFLAGS     += -DPCM_OFFLOAD_ENABLED_24
-       LOCAL_C_INCLUDES += $(TOP)/$(call project-path-for,qcom-media)/mm-core/inc
-endif
-endif
-
-ifeq ($(call is-vendor-board-platform,QCOM),true)
-ifeq ($(strip $(AUDIO_FEATURE_ENABLED_FLAC_OFFLOAD)),true)
-       LOCAL_CFLAGS     += -DFLAC_OFFLOAD_ENABLED
-endif
-endif
-
 LOCAL_SHARED_LIBRARIES += \
         libstagefright_enc_common \
         libstagefright_avc_common \
@@ -176,6 +137,24 @@ LOCAL_SHARED_LIBRARIES += \
         libdl
 
 LOCAL_CFLAGS += -Wno-multichar
+
+
+ifdef DOLBY_UDC
+  LOCAL_CFLAGS += -DDOLBY_UDC
+endif #DOLBY_UDC
+ifdef DOLBY_UDC_MULTICHANNEL
+  LOCAL_CFLAGS += -DDOLBY_UDC_MULTICHANNEL
+endif #DOLBY_UDC_MULTICHANNEL
+
+ifeq ($(BOARD_USE_SAMSUNG_COLORFORMAT), true)
+LOCAL_CFLAGS += -DUSE_SAMSUNG_COLORFORMAT
+
+# Include native color format header path
+LOCAL_C_INCLUDES += \
+	$(TOP)/hardware/samsung/exynos4/hal/include \
+	$(TOP)/hardware/samsung/exynos4/include
+
+endif
 
 LOCAL_MODULE:= libstagefright
 

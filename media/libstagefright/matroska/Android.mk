@@ -7,8 +7,6 @@ LOCAL_SRC_FILES:=                 \
 LOCAL_C_INCLUDES:= \
         $(TOP)/external/libvpx/libwebm \
         $(TOP)/frameworks/native/include/media/openmax \
-        $(TOP)/frameworks/av/media/libstagefright/include \
-        $(TOP)/$(call project-path-for,qcom-media)/mm-core/inc \
 
 LOCAL_CFLAGS += -Wno-multichar -Werror
 
