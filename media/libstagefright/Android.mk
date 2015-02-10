@@ -107,6 +107,10 @@ ifeq ($(TARGET_BOARD_PLATFORM),exynos4)
 LOCAL_CFLAGS := -DBOARD_CANT_REALLOCATE_OMX_BUFFERS
 endif
 
+ifeq ($(BOARD_USES_LEGACY_ACQUIRE_WVM),true)
+LOCAL_CFLAGS := -DUSES_LEGACY_ACQUIRE_WVM
+endif
+
 #QTI FLAC Decoder
 ifeq ($(call is-vendor-board-platform,QCOM),true)
 LOCAL_C_INCLUDES += $(TARGET_OUT_HEADERS)/mm-audio
