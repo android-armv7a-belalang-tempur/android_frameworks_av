@@ -39,7 +39,12 @@ public:
     // The returned buffer will have a reference count of 1.
     // If nonBlocking is true and a buffer is not immediately available,
     // buffer is set to NULL and it returns WOULD_BLOCK.
+    #ifdef USES_LEGACY_ACQUIRE_WVM
+    status_t acquire_buffer(MediaBuffer **out);
+    status_t acquire_buffer(MediaBuffer **buffer, bool nonBlocking);
+    #else
     status_t acquire_buffer(MediaBuffer **buffer, bool nonBlocking = false);
+    #endif
 
 protected:
     virtual void signalBufferReturned(MediaBuffer *buffer);
