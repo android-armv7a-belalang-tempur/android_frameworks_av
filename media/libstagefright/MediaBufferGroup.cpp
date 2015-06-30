@@ -63,7 +63,7 @@ status_t MediaBufferGroup::acquire_buffer(
 #endif
 status_t MediaBufferGroup::acquire_buffer(
     MediaBuffer **out, bool nonBlocking) {
-        Mutex::Autolock autoLock(mLock);
+         Mutex::Autolock autoLock(mLock);
 
     for (;;) {
         for (MediaBuffer *buffer = mFirstBuffer;
