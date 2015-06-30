@@ -48,6 +48,10 @@
 #include <OMX_Component.h>
 #include <OMX_IndexExt.h>
 
+#ifdef USE_SAMSUNG_COLORFORMAT
+#include <sec_format.h>
+#endif
+
 #include "include/avc_utils.h"
 
 namespace android {
@@ -628,14 +632,32 @@ status_t ACodec::configureOutputBuffersFromNativeWindow(
         return err;
     }
 
-    err = native_window_set_buffers_geometry(
-            mNativeWindow.get(),
-            def.format.video.nFrameWidth,
-            def.format.video.nFrameHeight,
-            def.format.video.eColorFormat);
+    err = native_window_set_buffers_dimensions(
+    mNativeWindow.get(),
+    def.format.video.nFrameWidth,
+    def.format.video.nFrameHeight);
 
     if (err != 0) {
-        ALOGE("native_window_set_buffers_geometry failed: %s (%d)",
+        ALOGE("native_window_set_buffers_dimesions failed: %s (%d)",
+                strerror(-err), -err);
+        return err;
+    }
+
+#ifdef USE_SAMSUNG_COLORFORMAT
+    OMX_COLOR_FORMATTYPE eNativeColorFormat = def.format.video.eColorFormat;
+    setNativeWindowColorFormat(eNativeColorFormat);
+
+    err = native_window_set_buffers_format(
+    mNativeWindow.get(),
+    eNativeColorFormat);
+#else
+    err = native_window_set_buffers_format(
+    mNativeWindow.get(),
+    def.format.video.eColorFormat);
+#endif
+
+    if (err != 0) {
+        ALOGE("native_window_set_buffers_format failed: %s (%d)",
                 strerror(-err), -err);
         return err;
     }
@@ -924,6 +946,25 @@ status_t ACodec::submitOutputMetaDataBuffer() {
     info->mStatus = BufferInfo::OWNED_BY_COMPONENT;
     return OK;
 }
+
+#ifdef USE_SAMSUNG_COLORFORMAT
+void ACodec::setNativeWindowColorFormat(OMX_COLOR_FORMATTYPE &eNativeColorFormat)
+{
+    // In case of Samsung decoders, we set proper native color format for the Native Window
+    if (!strcasecmp(mComponentName.c_str(), "OMX.SEC.AVC.Decoder")
+        || !strcasecmp(mComponentName.c_str(), "OMX.SEC.FP.AVC.Decoder")) {
+        switch (eNativeColorFormat) {
+            case OMX_COLOR_FormatYUV420SemiPlanar:
+                eNativeColorFormat = (OMX_COLOR_FORMATTYPE)HAL_PIXEL_FORMAT_YCbCr_420_SP;
+                break;
+            case OMX_COLOR_FormatYUV420Planar:
+            default:
+                eNativeColorFormat = (OMX_COLOR_FORMATTYPE)HAL_PIXEL_FORMAT_YCbCr_420_P;
+                break;
+        }
+    }
+}
+#endif
 
 status_t ACodec::cancelBufferToNativeWindow(BufferInfo *info) {
     CHECK_EQ((int)info->mStatus, (int)BufferInfo::OWNED_BY_US);
@@ -3927,10 +3968,16 @@ status_t ACodec::pushBlankBuffersToNativeWindow() {
         return err;
     }
 
-    err = native_window_set_buffers_geometry(mNativeWindow.get(), 1, 1,
-            HAL_PIXEL_FORMAT_RGBX_8888);
+    err = native_window_set_buffers_dimensions(mNativeWindow.get(), 1, 1);
     if (err != NO_ERROR) {
-        ALOGE("error pushing blank frames: set_buffers_geometry failed: %s (%d)",
+        ALOGE("error pushing blank frames: set_buffers_dimensions failed: %s (%d)",
+                strerror(-err), -err);
+        goto error;
+    }
+
+    err = native_window_set_buffers_format(mNativeWindow.get(), HAL_PIXEL_FORMAT_RGBX_8888);
+    if (err != NO_ERROR) {
+        ALOGE("error pushing blank frames: set_buffers_format failed: %s (%d)",
                 strerror(-err), -err);
         goto error;
     }
